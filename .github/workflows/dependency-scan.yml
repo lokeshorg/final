@@ -38,9 +38,13 @@ jobs:
             echo "::set-output name=repos::$REPO_NAME"
           else
             echo "Repository does not contain junit.version 4.12: $REPO_NAME"
+            echo "::set-output name=repos::"
           fi
 
       - name: Output Results
         if: steps.scan.outputs.repos != ''
         run: |
           echo "Repositories with junit.version 4.12: ${{ steps.scan.outputs.repos }}"
+      - name: No Results Found
+        if: steps.scan.outputs.repos == ''
+        run: echo "No repositories with junit.version 4.12 found."
