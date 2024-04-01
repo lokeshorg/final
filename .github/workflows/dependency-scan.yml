@@ -1,0 +1,27 @@
+name: Dependency Scan
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Run every day at midnight
+
+jobs:
+  scan-repositories:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Install jq
+        run: sudo apt-get install jq
+      
+      - name: Scan for Dependency
+        run: |
+          REPO_NAME=$(basename $(pwd))
+          POM_URL_ROOT="https://api.github.com/repos/lokeshorg/${REPO_NAME}/contents/pom.xml"
+          RESPONSE=$(curl -s -H "Authorization: Bearer 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" "$POM_URL_ROOT")
+          content=$(echo "$RESPONSE" | jq -r '.content')
+          decoded_content=$(echo "$content" | base64 --decode)
+          if grep -q '<junit.version>4.12</junit.version>' <<< "$decoded_content"; then
+            echo "Repository with junit.version 4.12 found: $REPO_NAME"
+          fi
