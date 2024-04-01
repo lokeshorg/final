@@ -28,4 +28,5 @@ jobs:
           fi
 
       - name: Output Results
-        run: echo "Repositories with junit.version 4.12: ${{ steps.scan.outputs.repos }}"
+        run: |
+          echo "Repositories with junit.version 4.12: ${{ steps.scan.outputs.repos }}"
