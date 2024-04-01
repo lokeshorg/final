@@ -1,9 +1,8 @@
 name: Dependency Scan
 
 on:
-  schedule:
-    - cron: '0 0 * * *'  # Run every day at midnight
-
+  workflow_dispatch:
+  
 jobs:
   scan-repositories:
     runs-on: ubuntu-latest
@@ -25,3 +24,4 @@ jobs:
           if grep -q '<junit.version>4.12</junit.version>' <<< "$decoded_content"; then
             echo "Repository with junit.version 4.12 found: $REPO_NAME"
           fi
+
