@@ -41,9 +41,9 @@ jobs:
           done
 
       - name: Output Results
-        if: steps.scan.outputs.repos != ''
+        if: steps.scan.outputs.repos != '' && steps.scan.outputs.repos != 'null'
         run: |
-          echo "Repositories with junit.version ${DEPENDENCY_VERSION}: ${{ steps.scan.outputs.repos }}"
+           echo "Repositories with junit.version ${DEPENDENCY_VERSION}: ${{ steps.scan.outputs.repos }}"
       - name: No Results Found
-        if: steps.scan.outputs.repos == ''
+        if: steps.scan.outputs.repos == '' || steps.scan.outputs.repos == 'null'
         run: echo "No repositories with junit.version ${DEPENDENCY_VERSION} found."
