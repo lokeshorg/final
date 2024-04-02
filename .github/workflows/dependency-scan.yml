@@ -17,7 +17,7 @@ jobs:
       - name: List Repositories
         id: list-repos
         run: |
-          ORG_NAME="${{ secrets.ORG_NAME }}"
+          ORG_NAME="lokeshorg"
           REPOS_URL="https://api.github.com/orgs/${ORG_NAME}/repos"
           RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "${REPOS_URL}")
           echo "Response: $RESPONSE"
@@ -27,7 +27,7 @@ jobs:
       - name: Scan for Dependency
         id: scan
         run: |
-          DEPENDENCY_VERSION="${{ secrets.DEPENDENCY_VERSION }}"
+          DEPENDENCY_VERSION="4.12"
           for REPO_NAME in ${{ steps.list-repos.outputs.repos }}; do
             echo "Scanning repository: $REPO_NAME"
             POM_URL_ROOT="https://api.github.com/repos/${ORG_NAME}/${REPO_NAME}/contents/pom.xml"
