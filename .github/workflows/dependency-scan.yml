@@ -36,14 +36,18 @@ jobs:
             decoded_content=$(echo "$content" | base64 --decode)
             if grep -q "<junit.version>${DEPENDENCY_VERSION}</junit.version>" <<< "$decoded_content"; then
               echo "Repository with junit.version ${DEPENDENCY_VERSION} found: $REPO_NAME"
-              echo "::set-output name=repos::$REPO_NAME"
+              if [ -z "$REPOS_WITH_DEPENDENCY" ]; then
+                REPOS_WITH_DEPENDENCY="$REPO_NAME"
+              else
+                REPOS_WITH_DEPENDENCY="$REPOS_WITH_DEPENDENCY, $REPO_NAME"
+              fi
             fi
           done
 
       - name: Output Results
         if: steps.scan.outputs.repos != '' && steps.scan.outputs.repos != 'null'
         run: |
-           echo "Repositories with junit.version ${DEPENDENCY_VERSION}: ${{ steps.scan.outputs.repos }}"
+          echo "Repositories with junit.version ${DEPENDENCY_VERSION}: $REPOS_WITH_DEPENDENCY"
       - name: No Results Found
         if: steps.scan.outputs.repos == '' || steps.scan.outputs.repos == 'null'
         run: echo "No repositories with junit.version ${DEPENDENCY_VERSION} found."
