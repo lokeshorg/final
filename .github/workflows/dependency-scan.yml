@@ -2,7 +2,7 @@ name: pom.xml version determine
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   pom-finds:
