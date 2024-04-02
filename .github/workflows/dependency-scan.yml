@@ -1,53 +1,40 @@
-name: Dependency Scan
-
+name: pom.xml version determine
 on:
-  workflow_dispatch:
-  
+  push:
+    branches:
+      - main
+
 jobs:
-  scan-repositories:
+  pom-finds:
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout Repository
+      - name: Checkout code
         uses: actions/checkout@v2
-      
-      - name: Install jq
-        run: sudo apt-get install jq
-      
-      - name: List Repositories
-        id: list-repos
+
+      - name: Perform REST API request
+        env:
+          BEARER_TOKEN: ${{ secrets.BEARER_TOKEN }}
         run: |
           ORG_NAME="lokeshorg"
-          REPOS_URL="https://api.github.com/orgs/${ORG_NAME}/repos"
-          RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "${REPOS_URL}")
-          echo "Response: $RESPONSE"
-          REPO_NAMES=$(echo "$RESPONSE" | jq -r '.[] | .name')
-          echo "::set-output name=repos::$REPO_NAMES"
 
-      - name: Scan for Dependency
-        id: scan
-        run: |
-          DEPENDENCY_VERSION="4.12"
-          for REPO_NAME in ${{ steps.list-repos.outputs.repos }}; do
-            echo "Scanning repository: $REPO_NAME"
-            POM_URL_ROOT="https://api.github.com/repos/${ORG_NAME}/${REPO_NAME}/contents/pom.xml"
-            RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "$POM_URL_ROOT")
-            content=$(echo "$RESPONSE" | jq -r '.content')
-            decoded_content=$(echo "$content" | base64 --decode)
-            if grep -q "<junit.version>${DEPENDENCY_VERSION}</junit.version>" <<< "$decoded_content"; then
-              echo "Repository with junit.version ${DEPENDENCY_VERSION} found: $REPO_NAME"
-              if [ -z "$REPOS_WITH_DEPENDENCY" ]; then
-                REPOS_WITH_DEPENDENCY="$REPO_NAME"
-              else
-                REPOS_WITH_DEPENDENCY="$REPOS_WITH_DEPENDENCY, $REPO_NAME"
+          check_pom_content() {
+              local REPO_NAME="$1"
+              local POM_URL="$2"
+              RESPONSE=$(curl -s -H "Authorization: Bearer $BEARER_TOKEN" "$POM_URL")
+              content=$(echo "$RESPONSE" | jq -r '.content')
+              decoded_content=$(echo "$content" | base64 --decode)
+              if grep -q '<junit.version>4.12</junit.version>' <<< "$decoded_content"; then
+                  echo "Repository with junit.version 4.12 found: $REPO_NAME"
               fi
-            fi
-          done
+          }
 
-      - name: Output Results
-        if: steps.scan.outputs.repos != '' && steps.scan.outputs.repos != 'null'
-        run: |
-          echo "Repositories with junit.version ${DEPENDENCY_VERSION}: $REPOS_WITH_DEPENDENCY"
-      - name: No Results Found
-        if: steps.scan.outputs.repos == '' || steps.scan.outputs.repos == 'null'
-        run: echo "No repositories with junit.version ${DEPENDENCY_VERSION} found."
+          REPOS_URL="https://api.github.com/orgs/${ORG_NAME}/repos"
+          REPO_RESPONSE=$(curl -s -H "Authorization: Bearer $BEARER_TOKEN" "$REPOS_URL")
+          REPO_NAMES=$(echo "$REPO_RESPONSE" | jq -r '.[].name')
+          
+          for REPO_NAME in $REPO_NAMES; do
+              POM_URL_ROOT="https://api.github.com/repos/${ORG_NAME}/${REPO_NAME}/contents/pom.xml"
+              check_pom_content "$REPO_NAME" "$POM_URL_ROOT"
+              POM_URL_MULEBOM="https://api.github.com/repos/${ORG_NAME}/${REPO_NAME}/contents/mulebom/pom.xml"
+              check_pom_content "$REPO_NAME" "$POM_URL_MULEBOM"
+          done
