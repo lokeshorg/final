@@ -19,7 +19,7 @@ jobs:
         run: |
           ORG_NAME="lokeshorg"
           REPOS_URL="https://api.github.com/orgs/${ORG_NAME}/repos"
-          RESPONSE=$(curl -s -H "Authorization: Bearer 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" "${REPOS_URL}")
+          RESPONSE=$(curl -s -H "Authorization: Bearer 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" "${REPOS_URL}")
           echo "Response: $RESPONSE"
           REPO_NAMES=$(echo "$RESPONSE" | jq -r '.[] | .name')
           echo "::set-output name=repos::$REPO_NAMES"
