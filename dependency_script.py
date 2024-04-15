@@ -7,7 +7,7 @@ import json
 ORG_NAME = "lokeshorg"
 
 # Read GitHub token from environment variable
-BEARER_TOKEN = os.getenv("GITHUB_TOKEN")
+BEARER_TOKEN = os.getenv("BEARER_TOKEN")
 
 # GitHub API endpoint for getting user repositories
 REPOS_URL = f"https://api.github.com/orgs/{ORG_NAME}/repos"
