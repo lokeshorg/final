@@ -49,7 +49,7 @@ for repo_name in repo_names:
         for dependency in dependency_management:
             dependency_name = dependency.get('artifactId')
             dependency_version = dependency.get('version')
-            dependencies.append({"name": dependency_name, "version": dependency_version})
+            dependencies.append({"dependency": dependency_name, "version": dependency_version})
 
         # Extract properties
         properties = mulebom_pom_dict.get('project', {}).get('properties', {})
