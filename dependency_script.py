@@ -33,37 +33,64 @@ for repo_name in repo_names:
     # Make GET request to fetch mulebom/pom.xml content with bearer token
     mulebom_pom_response = requests.get(MULEBOM_URL, headers=headers)
 
-    # Check if the request was successful
+    # Check if the request was successful and mulebom/pom.xml exists
     if mulebom_pom_response.status_code == 200:
         # Decode the content from base64 for mulebom/pom.xml
         mulebom_pom_content = base64.b64decode(mulebom_pom_response.json()['content']).decode('utf-8')
 
-        # Convert XML to dictionary for mulebom/pom.xml
-        mulebom_pom_dict = xmltodict.parse(mulebom_pom_content)
+        # Convert XML to dictionary for mulebom/pom.xml content
+        pom_dict = xmltodict.parse(mulebom_pom_content)
 
-        # Extract dependencies
+        # Extract dependencies and versions
         dependencies = []
-        dependency_management = mulebom_pom_dict.get('project', {}).get('dependencyManagement', {}).get('dependencies', {}).get('dependency', [])
+        dependency_management = pom_dict.get('project', {}).get('dependencyManagement', {}).get('dependencies', {}).get('dependency', [])
         if not isinstance(dependency_management, list):
             dependency_management = [dependency_management]
         for dependency in dependency_management:
             dependency_name = dependency.get('artifactId')
             dependency_version = dependency.get('version')
-            dependencies.append({"dependency": dependency_name, "version": dependency_version})
+            dependencies.append({"dependencyname": dependency_name, "version": dependency_version})
 
-        # Extract properties
-        properties = mulebom_pom_dict.get('project', {}).get('properties', {})
+        # Extract properties for version resolution
+        properties = pom_dict.get('project', {}).get('properties', {})
         
-        # Replace version placeholders with actual versions in dependencies
-        for dependency in dependencies:
-            if dependency['version'] and dependency['version'].startswith("${") and dependency['version'].endswith("}"):
-                version_key = dependency['version'][2:-1]
-                dependency['version'] = properties.get(version_key)
-
-        # Store repository information in the dictionary
-        repository_info[repo_name] = dependencies
     else:
-        print(f"mulebom/pom.xml not found for repository: {repo_name}")
+        # If mulebom/pom.xml not found, try to fetch pom.xml from root
+        ROOT_POM_URL = f"https://api.github.com/repos/{ORG_NAME}/{repo_name}/contents/pom.xml"
+        root_pom_response = requests.get(ROOT_POM_URL, headers=headers)
+
+        # Check if the request was successful and pom.xml exists
+        if root_pom_response.status_code == 200:
+            # Decode the content from base64 for pom.xml in root
+            root_pom_content = base64.b64decode(root_pom_response.json()['content']).decode('utf-8')
+
+            # Convert XML to dictionary for pom.xml content
+            pom_dict = xmltodict.parse(root_pom_content)
+
+            # Extract dependencies and versions directly from root pom.xml
+            dependencies = []
+            dependency_elements = pom_dict.get('project', {}).get('dependencies', {}).get('dependency', [])
+            if not isinstance(dependency_elements, list):
+                dependency_elements = [dependency_elements]
+            for dependency in dependency_elements:
+                dependency_name = dependency.get('artifactId')
+                dependency_version = dependency.get('version')
+                dependencies.append({"dependencyname": dependency_name, "version": dependency_version})
+
+            # Extract properties from root pom.xml for version resolution
+            properties = pom_dict.get('project', {}).get('properties', {})
+        else:
+            print(f"Neither mulebom/pom.xml nor pom.xml found for repository: {repo_name}")
+            continue
+
+    # Replace version placeholders with actual versions in dependencies
+    for dependency in dependencies:
+        if dependency['version'] and dependency['version'].startswith("${") and dependency['version'].endswith("}"):
+            version_key = dependency['version'][2:-1]
+            dependency['version'] = properties.get(version_key)
+
+    # Store repository information in the dictionary
+    repository_info[repo_name] = dependencies
 
 # Print the combined repository information
 print(json.dumps(repository_info, indent=4))
